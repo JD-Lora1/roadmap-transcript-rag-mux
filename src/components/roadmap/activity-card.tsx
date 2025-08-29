@@ -1,15 +1,17 @@
-"use client";
+'use client';
 
-import { motion } from "framer-motion";
-import type { RoadmapNode } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { motion } from 'framer-motion';
+import type { RoadmapNode } from '@/lib/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Info } from "lucide-react";
+} from '@/components/ui/tooltip';
+import { Info } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { getEtapaColor } from '@/lib/etapa-colors';
 
 interface ActivityCardProps {
   node: RoadmapNode;
@@ -18,8 +20,8 @@ interface ActivityCardProps {
 }
 
 export function ActivityCard({ node, level, methodologyColor }: ActivityCardProps) {
-  const whyNode = node.children.find(child => child.Tipo === "Why");
-  const detailedActivities = node.children.filter(child => child.Tipo === "Actividad_Detallada");
+  const whyNode = node.children.find(child => child.Tipo === 'Why');
+  const detailedActivities = node.children.filter(child => child.Tipo === 'Actividad_Detallada');
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -29,62 +31,79 @@ export function ActivityCard({ node, level, methodologyColor }: ActivityCardProp
       transition: {
         delay: i * 0.05,
         duration: 0.5,
-        ease: "easeOut",
+        ease: 'easeOut',
       },
     }),
   };
 
-  const cardStyle = {
-    borderLeftColor: methodologyColor
-  } as React.CSSProperties;
+  const etapa1Color = node.Etapa ? getEtapaColor(node.Etapa) : null;
+  const etapa2Color = node.Etapa2 ? getEtapaColor(node.Etapa2) : null;
 
   return (
     <motion.div
-      custom={level}
-      initial="hidden"
-      animate="visible"
+      id={`actividad-${node.ID}`}
+      className='relative'
       variants={cardVariants}
+      initial='hidden'
+      whileInView='visible'
+      viewport={{ once: true, amount: 0.2 }}
+      custom={level}
     >
       <Card
-        id={`actividad-${node.ID}`}
-        className="overflow-hidden border-l-4 shadow-md hover:shadow-xl transition-all duration-300 bg-card/80 backdrop-blur-sm w-full"
-        style={cardStyle}
+        className='relative overflow-hidden'
+        style={{
+          marginLeft: `${level * 2}rem`,
+          borderLeft: `4px solid ${methodologyColor}`,
+        }}
       >
-        <CardHeader className="pb-2">
-          <div className="flex justify-between items-start">
-            <CardTitle className="text-base font-semibold text-foreground">{node.Título}</CardTitle>
-            {whyNode && (
-               <TooltipProvider>
-                 <Tooltip>
-                   <TooltipTrigger asChild>
-                     <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                   </TooltipTrigger>
-                   <TooltipContent>
-                     <p className="max-w-xs">{whyNode.Título}</p>
-                   </TooltipContent>
-                 </Tooltip>
-               </TooltipProvider>
-            )}
-          </div>
+        {etapa1Color && (
+            <div className='absolute top-0 right-0 h-full w-1' style={{ backgroundColor: etapa1Color }} />
+        )}
+        {etapa2Color && (
+            <div className='absolute top-0 right-1 h-full w-1' style={{ backgroundColor: etapa2Color }} />
+        )}
+
+        <div className='absolute top-2 right-2 flex flex-col gap-1'>
+          {node.Etapa && <Badge style={{ backgroundColor: etapa1Color }}>{node.Etapa}</Badge>}
+          {node.Etapa2 && <Badge style={{ backgroundColor: etapa2Color }}>{node.Etapa2}</Badge>}
+        </div>
+
+        <CardHeader>
+          <CardTitle className='text-base font-semibold pr-16'>
+            {node.Título}
+          </CardTitle>
+          {whyNode && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className='absolute top-3 right-3 text-muted-foreground hover:text-foreground'>
+                    <Info size={16} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side='top' align='end' className='max-w-xs'>
+                  <p className='font-bold text-sm mb-2'>Why?</p>
+                  <p className='text-xs'>{whyNode.Descripción}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </CardHeader>
         <CardContent>
-          {node.Descripción && (
-            <p className="text-sm text-muted-foreground mb-3">{node.Descripción}</p>
-          )}
+          <div
+            className='text-sm text-muted-foreground prose prose-sm max-w-none'
+            dangerouslySetInnerHTML={{ __html: node.Descripción }}
+          />
 
           {detailedActivities.length > 0 && (
-             <div className="relative pl-6 mt-4 space-y-4">
-                <div className="absolute left-2.5 top-0 h-full w-px bg-border"></div>
-                {detailedActivities.map((detailedActivity) => (
-                    <div key={detailedActivity.ID} className="relative">
-                        <div className="absolute -left-3.5 top-2.5 h-px w-3 bg-border"></div>
-                        <ActivityCard
-                            node={detailedActivity}
-                            level={level + 1}
-                            methodologyColor={methodologyColor}
-                        />
-                    </div>
-                ))}
+            <div className='mt-4 space-y-4'>
+              {detailedActivities.map((detailedActivity, index) => (
+                <ActivityCard
+                  key={detailedActivity.ID}
+                  node={detailedActivity}
+                  level={level + 1}
+                  methodologyColor={methodologyColor}
+                />
+              ))}
             </div>
           )}
         </CardContent>
