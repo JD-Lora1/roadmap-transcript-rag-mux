@@ -3,7 +3,13 @@
 import { motion } from "framer-motion";
 import type { RoadmapNode } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { methodologyColorToHsl } from "@/lib/colors";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 
 interface ActivityCardProps {
   node: RoadmapNode;
@@ -29,11 +35,7 @@ export function ActivityCard({ node, level, methodologyColor }: ActivityCardProp
   };
 
   const cardStyle = {
-    "--methodology-color": methodologyColor,
-    "--methodology-color-hsl": methodologyColorToHsl(methodologyColor),
-    "--methodology-color-light": `hsl(var(--methodology-color-hsl), 95%)`,
-    "--methodology-color-border": `hsl(var(--methodology-color-hsl), 90%)`,
-    borderLeftColor: "var(--methodology-color)"
+    borderLeftColor: methodologyColor
   } as React.CSSProperties;
 
   return (
@@ -49,28 +51,31 @@ export function ActivityCard({ node, level, methodologyColor }: ActivityCardProp
         style={cardStyle}
       >
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold text-foreground">{node.Título}</CardTitle>
+          <div className="flex justify-between items-start">
+            <CardTitle className="text-base font-semibold text-foreground">{node.Título}</CardTitle>
+            {whyNode && (
+               <TooltipProvider>
+                 <Tooltip>
+                   <TooltipTrigger asChild>
+                     <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                   </TooltipTrigger>
+                   <TooltipContent>
+                     <p className="max-w-xs">{whyNode.Título}</p>
+                   </TooltipContent>
+                 </Tooltip>
+               </TooltipProvider>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {node.Descripción && (
             <p className="text-sm text-muted-foreground mb-3">{node.Descripción}</p>
           )}
 
-          {whyNode && (
-            <div 
-              className="mb-3 p-3 rounded-md border-l-2 bg-[var(--methodology-color-light)] border-[var(--methodology-color)]"
-            >
-              <p className="text-sm italic text-muted-foreground">
-                <span className="font-semibold" style={{color: "var(--methodology-color)"}}>Why: </span>
-                {whyNode.Título}
-              </p>
-            </div>
-          )}
-          
           {detailedActivities.length > 0 && (
              <div className="relative pl-6 mt-4 space-y-4">
                 <div className="absolute left-2.5 top-0 h-full w-px bg-border"></div>
-                {detailedActivities.map((detailedActivity, index) => (
+                {detailedActivities.map((detailedActivity) => (
                     <div key={detailedActivity.ID} className="relative">
                         <div className="absolute -left-3.5 top-2.5 h-px w-3 bg-border"></div>
                         <ActivityCard

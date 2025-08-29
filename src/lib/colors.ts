@@ -1,14 +1,17 @@
-// Palette: Shades of Blue, Orange, and Purple
+// Palette: Shades of Blue and Orange
 export const methodologyColors = [
-    '#2E5A88', // Deep Steel Blue
-    '#D75A2F', // Rusty Orange
-    '#5D3F6A', // Muted Grape
-    '#4A89AC', // Summer Sky Blue
-    '#F08A5D', // Soft Apricot
-    '#8B6C94', // Lavender Gray
-    '#6CA3C2', // Light Steel Blue
-    '#E57373', // Light Coral (as a variation from orange)
-    '#A08AB8', // Soft Lilac
+    '#005f73', // Dark Cyan
+    '#0a9396', // Viridian Green
+    '#94d2bd', // Middle Blue Green
+    '#e9d8a6', // Medium Champagne
+    '#ee9b00', // Gamboge
+    '#ca6702', // Ochre
+    '#bb3e03', // Rust
+    '#ae2012', // Rufous
+    '#9b2226', // Ruby Red
+    '#3a86ff', // Neon Blue
+    '#8338ec', // Blue Violet
+    '#ff006e', // Magenta
 ];
 
 const hexToHsl = (hex: string): [number, number, number] => {

@@ -11,6 +11,7 @@ import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 import { methodologyColors } from "@/lib/colors";
 import { HolisticView } from "./holistic-view";
+import { Header } from "../layout/header";
 
 interface RoadmapClientProps {
   flatData: RoadmapItem[];
@@ -20,6 +21,7 @@ interface RoadmapClientProps {
 export function RoadmapClient({ flatData, treeData }: RoadmapClientProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [isHolisticViewOpen, setHolisticViewOpen] = useState(true);
   const { toast } = useToast();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -32,7 +34,7 @@ export function RoadmapClient({ flatData, treeData }: RoadmapClientProps) {
           }
         });
       },
-      { rootMargin: "-40% 0px -60% 0px", threshold: 0 }
+      { rootMargin: "-40% 0px -60% 0px", threshold: 0.1 }
     );
   
     const elements = scrollContainerRef.current?.querySelectorAll('[id^="metodologia-"], [id^="actividad-"]');
@@ -68,25 +70,6 @@ export function RoadmapClient({ flatData, treeData }: RoadmapClientProps) {
       const descHeight = addWrappedText(doc, node.Descripción, x + cardPadding, currentY, textWidth, lineHeight);
       currentY += descHeight;
     }
-
-    const whyNode = node.children.find(c => c.Tipo === 'Why');
-    if (whyNode) {
-        currentY += 3;
-        doc.setFillColor(245, 245, 245);
-        
-        let whyY = currentY;
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "italic");
-        const whyText = `Why: ${whyNode.Título}`;
-        const whyHeight = addWrappedText(doc, whyText, x + cardPadding + 3, whyY + cardPadding, textWidth - 6, lineHeight);
-        
-        doc.roundedRect(x + cardPadding, whyY, textWidth, whyHeight + (cardPadding*2), 3, 3, 'F');
-        doc.setDrawColor(color);
-        doc.setLineWidth(0.5);
-        doc.line(x + cardPadding, whyY, x + cardPadding, whyY + whyHeight + (cardPadding*2));
-
-        currentY += whyHeight + (cardPadding*2) + 3;
-    }
     
     currentY += cardPadding;
     const cardHeight = currentY - y;
@@ -115,15 +98,19 @@ export function RoadmapClient({ flatData, treeData }: RoadmapClientProps) {
 
         // Cover Page
         doc.setFontSize(28);
-        doc.text("Roadmap TranscriptRAG - JL", pageW / 2, pageH / 2 - 10, { align: 'center'});
+        doc.text("Roadmap TranscriptRAG - JL", pageW / 2, pageH / 2 - 20, { align: 'center'});
         doc.setFontSize(12);
-        doc.text("Resumen de Hoja de Ruta", pageW / 2, pageH / 2 + 10, { align: 'center'});
+        doc.text("Resumen de Hoja de Ruta", pageW / 2, pageH / 2, { align: 'center'});
+        doc.setTextColor(0, 0, 255);
+        doc.textWithLink("https://roadmap-transcript-rag-mux-production.up.railway.app", pageW / 2, pageH / 2 + 10, { url: "https://roadmap-transcript-rag-mux-production.up.railway.app", align: 'center' });
+        doc.setTextColor(0, 0, 0);
+
         doc.addPage();
         y = pageMargin;
 
         // Holistic View Page
         doc.setFontSize(18);
-        doc.text("Tablero General", pageW / 2, y, { align: 'center'});
+        doc.text("Vista General", pageMargin, y);
         y += 15;
 
         treeData.filter(m => m.Tipo === 'Metodología').forEach((methodology, methIndex) => {
@@ -154,10 +141,10 @@ export function RoadmapClient({ flatData, treeData }: RoadmapClientProps) {
         });
 
         // Detailed View Pages
-        let pageNumber = 2; // Start after cover and holistic view
+        let pageCount = doc.internal.getNumberOfPages();
         treeData.filter(m => m.Tipo === 'Metodología').forEach((methodology, methIndex) => {
             doc.addPage();
-            pageNumber++;
+            pageCount++;
             y = pageMargin;
             
             const color = methodologyColors[methIndex % methodologyColors.length];
@@ -169,42 +156,40 @@ export function RoadmapClient({ flatData, treeData }: RoadmapClientProps) {
             doc.setTextColor(0,0,0);
 
             methodology.children.filter(c => c.Tipo === 'Actividad_General').forEach(activity => {
-                const activityCardHeight = drawCard(doc, activity, pageMargin, y, contentWidth, color);
-                
-                if (y + activityCardHeight > pageH - pageMargin) {
+                if (y > pageH - pageMargin - 40) { // Check space for at least one card
                     doc.addPage();
-                    pageNumber++;
+                    pageCount++;
                     y = pageMargin;
-                    drawCard(doc, activity, pageMargin, y, contentWidth, color);
                 }
+                const activityCardHeight = drawCard(doc, activity, pageMargin, y, contentWidth, color);
                 
                 let currentYForSub = y + activityCardHeight + 5;
                 let subActivityX = pageMargin + 15;
                 let subActivityWidth = contentWidth - 20;
 
-                activity.children.filter(c => c.Tipo === 'Actividad_Detallada').forEach((subActivity, subIndex) => {
-                    const subCardHeight = drawCard(doc, subActivity, subActivityX, currentYForSub, subActivityWidth, color);
-
-                    if (currentYForSub + subCardHeight > pageH - pageMargin) {
+                activity.children.filter(c => c.Tipo === 'Actividad_Detallada').forEach((subActivity) => {
+                    if (currentYForSub > pageH - pageMargin - 30) {
                         doc.addPage();
-                        pageNumber++;
+                        pageCount++;
                         currentYForSub = pageMargin;
-                        drawCard(doc, subActivity, subActivityX, currentYForSub, subActivityWidth, color);
                     }
-                     currentYForSub += subCardHeight + 5;
+                    const subCardHeight = drawCard(doc, subActivity, subActivityX, currentYForSub, subActivityWidth, color);
+                    currentYForSub += subCardHeight + 5;
                 });
                 
                 y = currentYForSub;
-
             });
         });
+        
+        // Final page count
+        const finalPageCount = doc.internal.getNumberOfPages();
 
         // Page numbering
-        for (let i = 1; i <= pageNumber; i++) {
+        for (let i = 1; i <= finalPageCount; i++) {
             doc.setPage(i);
             doc.setFontSize(8);
             doc.setTextColor(150);
-            doc.text(`Página ${i} de ${pageNumber}`, pageW / 2, pageH - 5, { align: 'center' });
+            doc.text(`Página ${i} de ${finalPageCount}`, pageW / 2, pageH - 5, { align: 'center' });
         }
 
         doc.save("Roadmap-TranscriptRAG-JL.pdf");
@@ -220,10 +205,19 @@ export function RoadmapClient({ flatData, treeData }: RoadmapClientProps) {
   const methodologies = treeData.filter((item) => item.Tipo === "Metodología");
 
   return (
-    <div className="flex flex-row-reverse">
-       <HolisticView methodologies={methodologies} activeId={activeId} />
-      <div className="w-full flex-1 py-8 pr-4 sm:pr-6 md:pr-8">
-        <Tabs defaultValue="flow" className="w-full">
+    <>
+      <Header 
+        isHolisticViewOpen={isHolisticViewOpen} 
+        setHolisticViewOpen={setHolisticViewOpen}
+      />
+      <HolisticView 
+        methodologies={methodologies} 
+        activeId={activeId} 
+        isOpen={isHolisticViewOpen}
+        setOpen={setHolisticViewOpen}
+      />
+      <div className="w-full flex-1 py-8 transition-all duration-300" style={{ paddingLeft: isHolisticViewOpen ? '366px' : '16px' }}>
+        <Tabs defaultValue="flow" className="w-full max-w-4xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <TabsList>
               <TabsTrigger value="flow">Flujo</TabsTrigger>
@@ -245,6 +239,6 @@ export function RoadmapClient({ flatData, treeData }: RoadmapClientProps) {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </>
   );
 }

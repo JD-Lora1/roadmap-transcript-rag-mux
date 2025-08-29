@@ -4,7 +4,8 @@ export interface RoadmapItem {
   Tipo: 'Metodología' | 'Actividad_General' | 'Actividad_Detallada' | 'Why';
   Título: string;
   Descripción: string;
-  Why?: string;
+  Etapa?: string;
+  Etapa2?: string;
 }
 
 export interface RoadmapNode extends RoadmapItem {
