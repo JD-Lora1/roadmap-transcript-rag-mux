@@ -123,7 +123,7 @@ export function RoadmapClient({ flatData, treeData }: RoadmapClientProps) {
 
         // Holistic View Page
         doc.setFontSize(18);
-        doc.text("Vista Holística", pageW / 2, y, { align: 'center'});
+        doc.text("Tablero General", pageW / 2, y, { align: 'center'});
         y += 15;
 
         treeData.filter(m => m.Tipo === 'Metodología').forEach((methodology, methIndex) => {
@@ -177,24 +177,25 @@ export function RoadmapClient({ flatData, treeData }: RoadmapClientProps) {
                     y = pageMargin;
                     drawCard(doc, activity, pageMargin, y, contentWidth, color);
                 }
-
-                let subActivityX = pageMargin + 20;
-                let subActivityWidth = contentWidth - 25;
                 
-                activity.children.filter(c => c.Tipo === 'Actividad_Detallada').forEach((subActivity, subIndex) => {
-                    if (subIndex === 0) y += activityCardHeight + 5;
-                    else y += 5;
+                let currentYForSub = y + activityCardHeight + 5;
+                let subActivityX = pageMargin + 15;
+                let subActivityWidth = contentWidth - 20;
 
-                    const subCardHeight = drawCard(doc, subActivity, subActivityX, y, subActivityWidth, color);
-                    if (y + subCardHeight > pageH - pageMargin) {
+                activity.children.filter(c => c.Tipo === 'Actividad_Detallada').forEach((subActivity, subIndex) => {
+                    const subCardHeight = drawCard(doc, subActivity, subActivityX, currentYForSub, subActivityWidth, color);
+
+                    if (currentYForSub + subCardHeight > pageH - pageMargin) {
                         doc.addPage();
                         pageNumber++;
-                        y = pageMargin;
-                        drawCard(doc, subActivity, subActivityX, y, subActivityWidth, color);
+                        currentYForSub = pageMargin;
+                        drawCard(doc, subActivity, subActivityX, currentYForSub, subActivityWidth, color);
                     }
-                     y += subCardHeight;
+                     currentYForSub += subCardHeight + 5;
                 });
-                y += 10;
+                
+                y = currentYForSub;
+
             });
         });
 
@@ -221,7 +222,7 @@ export function RoadmapClient({ flatData, treeData }: RoadmapClientProps) {
   return (
     <div className="flex flex-row-reverse">
        <HolisticView methodologies={methodologies} activeId={activeId} />
-      <div className="w-full lg:w-3/4 py-8 pr-8">
+      <div className="w-full flex-1 py-8 pr-4 sm:pr-6 md:pr-8">
         <Tabs defaultValue="flow" className="w-full">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <TabsList>

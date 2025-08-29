@@ -15,7 +15,7 @@ export function RoadmapFlowView({ data: methodologies }: RoadmapFlowViewProps) {
         methodologies.map((methodology, index) => (
           <div key={methodology.ID} id={`metodologia-${methodology.ID}`} className="space-y-8">
             <h2
-              className="text-2xl font-bold pb-2 border-b-4 sticky top-14 bg-background/95 z-10"
+              className="text-2xl font-bold pb-3 pt-2 border-b-4 sticky top-14 bg-background/95 z-10"
               style={{ borderBottomColor: methodologyColors[index % methodologyColors.length] }}
             >
               {methodology.Título}
@@ -24,7 +24,7 @@ export function RoadmapFlowView({ data: methodologies }: RoadmapFlowViewProps) {
               {methodology.children
                 .filter(child => child.Tipo === "Actividad_General")
                 .map((generalActivity) => (
-                <div key={generalActivity.ID} id={`actividad-${generalActivity.ID}`}>
+                <div key={generalActivity.ID}>
                   <ActivityCard
                     node={generalActivity}
                     level={0}
