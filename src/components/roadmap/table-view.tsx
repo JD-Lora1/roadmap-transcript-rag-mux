@@ -21,7 +21,8 @@ export function TableView({ data }: TableViewProps) {
       (item) =>
         item.Título.toLowerCase().includes(lowercasedFilter) ||
         item.Descripción?.toLowerCase().includes(lowercasedFilter) ||
-        item.Tipo.toLowerCase().includes(lowercasedFilter)
+        item.Tipo.toLowerCase().includes(lowercasedFilter) ||
+        item.Etapa?.toLowerCase().includes(lowercasedFilter)
     );
   }, [data, searchTerm]);
 
@@ -44,6 +45,7 @@ export function TableView({ data }: TableViewProps) {
               <TableHead className="w-[150px]">Tipo</TableHead>
               <TableHead>Título</TableHead>
               <TableHead>Descripción</TableHead>
+              <TableHead>Etapa</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -53,6 +55,7 @@ export function TableView({ data }: TableViewProps) {
                   <TableCell className="font-medium">{item.Tipo}</TableCell>
                   <TableCell>{item.Título}</TableCell>
                   <TableCell>{item.Descripción}</TableCell>
+                  <TableCell>{item.Etapa}</TableCell>
                 </TableRow>
               ))
             ) : (
