@@ -2,15 +2,16 @@
 
 import { motion } from "framer-motion";
 import type { RoadmapNode } from "@/lib/types";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface ActivityCardProps {
   node: RoadmapNode;
   level: number;
+  methodologyColor: string;
 }
 
-export function ActivityCard({ node, level }: ActivityCardProps) {
+export function ActivityCard({ node, level, methodologyColor }: ActivityCardProps) {
   const whyNode = node.children.find(child => child.Tipo === "Why");
   const detailedActivities = node.children.filter(child => child.Tipo === "Actividad_Detallada");
 
@@ -34,16 +35,20 @@ export function ActivityCard({ node, level }: ActivityCardProps) {
       animate="visible"
       variants={cardVariants}
     >
-      <Card className="overflow-hidden border-l-4 border-primary shadow-sm hover:shadow-lg transition-shadow duration-300">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base font-semibold">{node.Título}</CardTitle>
-          {node.Descripción && (
-            <CardDescription className="text-sm pt-1">{node.Descripción}</CardDescription>
-          )}
+      <Card
+        className="overflow-hidden border-l-4 shadow-md hover:shadow-xl transition-all duration-300 bg-card/80 backdrop-blur-sm w-72"
+        style={{ borderLeftColor: methodologyColor }}
+      >
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base font-semibold text-foreground">{node.Título}</CardTitle>
         </CardHeader>
         <CardContent>
+          {node.Descripción && (
+            <p className="text-sm text-muted-foreground mb-3">{node.Descripción}</p>
+          )}
+
           {whyNode && (
-            <div className="mt-2 mb-4 p-3 bg-muted/50 rounded-md">
+            <div className="mb-3 p-3 bg-muted/50 rounded-md border-l-2" style={{ borderLeftColor: methodologyColor }}>
               <p className="text-sm italic text-muted-foreground">
                 <span className="font-semibold text-foreground">Why: </span>
                 {whyNode.Título}
@@ -51,9 +56,21 @@ export function ActivityCard({ node, level }: ActivityCardProps) {
             </div>
           )}
           {detailedActivities.length > 0 && (
-            <div className={cn("space-y-3", { "ml-4 pl-4 border-l": level === 0 })}>
-              {detailedActivities.map((detailedActivity) => (
-                <ActivityCard key={detailedActivity.ID} node={detailedActivity} level={level + 1} />
+            <div className="space-y-3">
+              {detailedActivities.map((detailedActivity, index) => (
+                <div key={detailedActivity.ID} className="relative pl-6">
+                   <div
+                    className="absolute left-2 top-2 h-[calc(100%-1rem)] w-px bg-border"
+                  ></div>
+                  <div
+                    className="absolute left-2 top-1/2 h-px w-4 bg-border"
+                  ></div>
+                   <ActivityCard
+                    node={detailedActivity}
+                    level={level + 1}
+                    methodologyColor={methodologyColor}
+                  />
+                </div>
               ))}
             </div>
           )}
