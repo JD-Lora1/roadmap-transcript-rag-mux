@@ -2,7 +2,6 @@ import { fetchAndParseRoadmapData } from '@/lib/data';
 import { RoadmapClient } from '@/components/roadmap/roadmap-client';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
-import { Header } from '@/components/layout/header';
 
 export default async function Home() {
   const { data: roadmapItems, tree, error } = await fetchAndParseRoadmapData();
@@ -22,12 +21,5 @@ export default async function Home() {
     );
   }
 
-  return (
-    <>
-      <Header />
-      <div className="container mx-auto">
-        <RoadmapClient flatData={roadmapItems} treeData={tree} />
-      </div>
-    </>
-  );
+  return <RoadmapClient flatData={roadmapItems} treeData={tree} />;
 }

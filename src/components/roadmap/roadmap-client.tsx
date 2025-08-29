@@ -11,7 +11,6 @@ import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 import { methodologyColors } from "@/lib/colors";
 import { HolisticView } from "./holistic-view";
-import { Header } from "../layout/header";
 
 interface RoadmapClientProps {
   flatData: RoadmapItem[];
@@ -21,7 +20,6 @@ interface RoadmapClientProps {
 export function RoadmapClient({ flatData, treeData }: RoadmapClientProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [isHolisticViewOpen, setHolisticViewOpen] = useState(true);
   const { toast } = useToast();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -205,18 +203,12 @@ export function RoadmapClient({ flatData, treeData }: RoadmapClientProps) {
   const methodologies = treeData.filter((item) => item.Tipo === "Metodología");
 
   return (
-    <>
-      <Header 
-        isHolisticViewOpen={isHolisticViewOpen} 
-        setHolisticViewOpen={setHolisticViewOpen}
-      />
+    <div className="flex">
       <HolisticView 
         methodologies={methodologies} 
         activeId={activeId} 
-        isOpen={isHolisticViewOpen}
-        setOpen={setHolisticViewOpen}
       />
-      <div className="w-full flex-1 py-8 transition-all duration-300" style={{ paddingLeft: isHolisticViewOpen ? '366px' : '16px' }}>
+      <div className="w-full flex-1 py-8 px-4 sm:px-6 md:px-8">
         <Tabs defaultValue="flow" className="w-full max-w-4xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <TabsList>
@@ -239,6 +231,6 @@ export function RoadmapClient({ flatData, treeData }: RoadmapClientProps) {
           </TabsContent>
         </Tabs>
       </div>
-    </>
+    </div>
   );
 }
