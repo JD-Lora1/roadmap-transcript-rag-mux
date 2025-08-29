@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import type { RoadmapNode } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 
 interface ActivityCardProps {
   node: RoadmapNode;
@@ -36,7 +35,8 @@ export function ActivityCard({ node, level, methodologyColor }: ActivityCardProp
       variants={cardVariants}
     >
       <Card
-        className="overflow-hidden border-l-4 shadow-md hover:shadow-xl transition-all duration-300 bg-card/80 backdrop-blur-sm w-72"
+        id={node.ID}
+        className="overflow-hidden border-l-4 shadow-md hover:shadow-xl transition-all duration-300 bg-card/80 backdrop-blur-sm w-full"
         style={{ borderLeftColor: methodologyColor }}
       >
         <CardHeader className="pb-2">
@@ -56,22 +56,18 @@ export function ActivityCard({ node, level, methodologyColor }: ActivityCardProp
             </div>
           )}
           {detailedActivities.length > 0 && (
-            <div className="space-y-3">
-              {detailedActivities.map((detailedActivity, index) => (
-                <div key={detailedActivity.ID} className="relative pl-6">
-                   <div
-                    className="absolute left-2 top-2 h-[calc(100%-1rem)] w-px bg-border"
-                  ></div>
-                  <div
-                    className="absolute left-2 top-1/2 h-px w-4 bg-border"
-                  ></div>
-                   <ActivityCard
-                    node={detailedActivity}
-                    level={level + 1}
-                    methodologyColor={methodologyColor}
-                  />
-                </div>
-              ))}
+             <div className="relative pl-5 mt-4 space-y-4">
+                <div className="absolute left-2 top-0 h-full w-px bg-border"></div>
+                {detailedActivities.map((detailedActivity, index) => (
+                    <div key={detailedActivity.ID} className="relative">
+                        <div className="absolute -left-3 top-2.5 h-px w-3 bg-border"></div>
+                        <ActivityCard
+                            node={detailedActivity}
+                            level={level + 1}
+                            methodologyColor={methodologyColor}
+                        />
+                    </div>
+                ))}
             </div>
           )}
         </CardContent>

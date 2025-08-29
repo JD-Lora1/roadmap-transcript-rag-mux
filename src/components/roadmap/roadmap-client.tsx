@@ -6,10 +6,11 @@ import { RoadmapFlowView } from "./roadmap-flow-view";
 import { TableView } from "./table-view";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 import { methodologyColors } from "@/lib/colors";
+import { HolisticView } from "./holistic-view";
 
 interface RoadmapClientProps {
   flatData: RoadmapItem[];
@@ -18,7 +19,30 @@ interface RoadmapClientProps {
 
 export function RoadmapClient({ flatData, treeData }: RoadmapClientProps) {
   const [isExporting, setIsExporting] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const { toast } = useToast();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveId(entry.target.id);
+          }
+        });
+      },
+      { rootMargin: "-40% 0px -60% 0px", threshold: 0 }
+    );
+  
+    const elements = scrollContainerRef.current?.querySelectorAll('[id^="metodologia-"], [id^="actividad-"]');
+    elements?.forEach((el) => observer.observe(el));
+  
+    return () => {
+      elements?.forEach((el) => observer.unobserve(el));
+    };
+  }, [treeData]);
+
 
   const addWrappedText = (doc: jsPDF, text: string, x: number, y: number, maxWidth: number, lineHeight: number, options = {}) => {
     const lines = doc.splitTextToSize(text, maxWidth);
@@ -26,20 +50,19 @@ export function RoadmapClient({ flatData, treeData }: RoadmapClientProps) {
     return lines.length * lineHeight;
   };
 
-  const drawCard = (doc: jsPDF, node: RoadmapNode, x: number, y: number, level: number, color: string) => {
-    const cardWidth = 80;
-    const cardPadding = 3;
-    const textWidth = cardWidth - (cardPadding * 2);
-    const lineHeight = 4.5;
+  const drawCard = (doc: jsPDF, node: RoadmapNode, x: number, y: number, width: number, color: string) => {
+    const cardPadding = 5;
+    const textWidth = width - (cardPadding * 2);
+    const lineHeight = 5;
     let currentY = y + cardPadding + 5;
     
-    doc.setFontSize(9);
+    doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
     const titleHeight = addWrappedText(doc, node.Título, x + cardPadding, currentY, textWidth, lineHeight);
     currentY += titleHeight;
 
     if (node.Descripción) {
-      doc.setFontSize(8);
+      doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       currentY += 2;
       const descHeight = addWrappedText(doc, node.Descripción, x + cardPadding, currentY, textWidth, lineHeight);
@@ -48,177 +71,179 @@ export function RoadmapClient({ flatData, treeData }: RoadmapClientProps) {
 
     const whyNode = node.children.find(c => c.Tipo === 'Why');
     if (whyNode) {
-        currentY += 2;
-        doc.setFillColor(240, 240, 240);
-        doc.setDrawColor(220, 220, 220);
+        currentY += 3;
+        doc.setFillColor(245, 245, 245);
         
         let whyY = currentY;
-        doc.setFontSize(8);
+        doc.setFontSize(9);
         doc.setFont("helvetica", "italic");
         const whyText = `Why: ${whyNode.Título}`;
-        const whyHeight = addWrappedText(doc, whyText, x + cardPadding + 2, whyY + cardPadding, textWidth - 4, lineHeight);
+        const whyHeight = addWrappedText(doc, whyText, x + cardPadding + 3, whyY + cardPadding, textWidth - 6, lineHeight);
         
-        doc.rect(x + cardPadding, whyY, textWidth, whyHeight + cardPadding, 'FD');
-        currentY += whyHeight + cardPadding + 2;
+        doc.roundedRect(x + cardPadding, whyY, textWidth, whyHeight + (cardPadding*2), 3, 3, 'F');
+        doc.setDrawColor(color);
+        doc.setLineWidth(0.5);
+        doc.line(x + cardPadding, whyY, x + cardPadding, whyY + whyHeight + (cardPadding*2));
+
+        currentY += whyHeight + (cardPadding*2) + 3;
     }
     
     currentY += cardPadding;
-    doc.setDrawColor(color);
-    doc.setLineWidth(1);
-    doc.line(x, y, x, y + currentY - y);
+    const cardHeight = currentY - y;
+
     doc.setDrawColor(220, 220, 220);
     doc.setLineWidth(0.2);
-    doc.rect(x, y, cardWidth, currentY - y, 'S');
+    doc.roundedRect(x, y, width, cardHeight, 3, 3, 'S');
+    doc.setDrawColor(color);
+    doc.setLineWidth(1.5);
+    doc.line(x, y, x, y + cardHeight);
 
-    return { cardHeight: currentY - y, cardWidth };
+    return cardHeight;
   };
 
   const handleExport = async () => {
     setIsExporting(true);
-    toast({
-      title: "Generating PDF...",
-      description: "This may take a moment. Please wait.",
-    });
+    toast({ title: "Generando PDF...", description: "Esto puede tomar un momento." });
 
     try {
-        const doc = new jsPDF({
-            orientation: "landscape",
-            unit: "mm",
-            format: "a4",
-        });
-
-        doc.setFont("helvetica", "normal");
+        const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
         const pageMargin = 15;
-        const pageWidth = doc.internal.pageSize.getWidth() - pageMargin * 2;
-        let x = pageMargin;
+        const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
+        const contentWidth = pageW - (pageMargin * 2);
         let y = pageMargin;
-        let pageNumber = 1;
-        const methodologies = treeData.filter((item) => item.Tipo === "Metodología");
 
-        doc.setFontSize(24);
-        doc.text("Roadmap TranscriptRAG - JL", doc.internal.pageSize.getWidth() / 2, y, { align: 'center'});
-        y += 20;
+        // Cover Page
+        doc.setFontSize(28);
+        doc.text("Roadmap TranscriptRAG - JL", pageW / 2, pageH / 2 - 10, { align: 'center'});
+        doc.setFontSize(12);
+        doc.text("Resumen de Hoja de Ruta", pageW / 2, pageH / 2 + 10, { align: 'center'});
+        doc.addPage();
+        y = pageMargin;
 
-        methodologies.forEach((methodology, methIndex) => {
-            const color = methodologyColors[methIndex % methodologyColors.length];
-            const hexColor = doc.colors.colorNameToHex(color);
+        // Holistic View Page
+        doc.setFontSize(18);
+        doc.text("Vista Holística", pageW / 2, y, { align: 'center'});
+        y += 15;
 
-            if (y > doc.internal.pageSize.getHeight() - 40) {
+        treeData.filter(m => m.Tipo === 'Metodología').forEach((methodology, methIndex) => {
+          if (y > pageH - 30) {
+            doc.addPage();
+            y = pageMargin;
+          }
+          const color = methodologyColors[methIndex % methodologyColors.length];
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(color);
+          y += addWrappedText(doc, methodology.Título, pageMargin, y, contentWidth, 6);
+          y += 2;
+
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(0, 0, 0);
+
+          methodology.children.filter(c => c.Tipo === 'Actividad_General').forEach(activity => {
+            if (y > pageH - 20) {
               doc.addPage();
-              pageNumber++;
               y = pageMargin;
             }
-
-            doc.setFontSize(16);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(hexColor);
-            doc.text(methodology.Título, x, y);
-            y += 8;
-            doc.setTextColor(0,0,0);
-
-            let currentX = x;
-            let maxColHeight = 0;
-            let currentYInCol = y;
-            
-            methodology.children.forEach(activity => {
-                if (currentX > pageWidth - 80) {
-                    currentX = x;
-                    currentYInCol += maxColHeight + 10;
-                    maxColHeight = 0;
-                }
-
-                if (currentYInCol > doc.internal.pageSize.getHeight() - 40) {
-                    doc.addPage();
-                    pageNumber++;
-                    currentX = x;
-                    currentYInCol = pageMargin;
-                    maxColHeight = 0;
-                }
-
-                const { cardHeight, cardWidth } = drawCard(doc, activity, currentX, currentYInCol, 0, hexColor);
-                maxColHeight = Math.max(maxColHeight, cardHeight);
-
-                let subX = currentX + cardWidth + 10;
-                let subY = currentYInCol;
-
-                activity.children.filter(c => c.Tipo === 'Actividad_Detallada').forEach(subActivity => {
-                    if (subX > pageWidth - 80) {
-                        subX = currentX + cardWidth + 10;
-                        subY += maxColHeight + 5; 
-                        maxColHeight = 0;
-                    }
-
-                    if (subY > doc.internal.pageSize.getHeight() - 40) {
-                        doc.addPage();
-                        pageNumber++;
-                        subY = pageMargin;
-                        subX = x;
-                    }
-                    
-                    const { cardHeight: subCardHeight } = drawCard(doc, subActivity, subX, subY, 1, hexColor);
-                    maxColHeight = Math.max(maxColHeight, subY - currentYInCol + subCardHeight);
-                    subX += cardWidth + 10;
-                });
-                
-                currentX = subX;
-            });
-
-            y = currentYInCol + maxColHeight + 15;
+            const text = `- ${activity.Título}`;
+            y += addWrappedText(doc, text, pageMargin + 5, y, contentWidth - 5, 5);
+          });
+          y += 10;
         });
 
-      for (let i = 1; i <= pageNumber; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text(
-          `Página ${i} de ${pageNumber}`,
-          doc.internal.pageSize.getWidth() / 2,
-          doc.internal.pageSize.getHeight() - 5,
-          { align: 'center' }
-        );
-      }
+        // Detailed View Pages
+        let pageNumber = 2; // Start after cover and holistic view
+        treeData.filter(m => m.Tipo === 'Metodología').forEach((methodology, methIndex) => {
+            doc.addPage();
+            pageNumber++;
+            y = pageMargin;
+            
+            const color = methodologyColors[methIndex % methodologyColors.length];
+            doc.setFontSize(16);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(color);
+            doc.text(methodology.Título, pageMargin, y);
+            y += 10;
+            doc.setTextColor(0,0,0);
 
+            methodology.children.filter(c => c.Tipo === 'Actividad_General').forEach(activity => {
+                const activityCardHeight = drawCard(doc, activity, pageMargin, y, contentWidth, color);
+                
+                if (y + activityCardHeight > pageH - pageMargin) {
+                    doc.addPage();
+                    pageNumber++;
+                    y = pageMargin;
+                    drawCard(doc, activity, pageMargin, y, contentWidth, color);
+                }
 
-      doc.save("Roadmap-TranscriptRAG-JL.pdf");
+                let subActivityX = pageMargin + 20;
+                let subActivityWidth = contentWidth - 25;
+                
+                activity.children.filter(c => c.Tipo === 'Actividad_Detallada').forEach((subActivity, subIndex) => {
+                    if (subIndex === 0) y += activityCardHeight + 5;
+                    else y += 5;
 
-      toast({
-        title: "Success!",
-        description: "Your PDF has been downloaded.",
-      });
+                    const subCardHeight = drawCard(doc, subActivity, subActivityX, y, subActivityWidth, color);
+                    if (y + subCardHeight > pageH - pageMargin) {
+                        doc.addPage();
+                        pageNumber++;
+                        y = pageMargin;
+                        drawCard(doc, subActivity, subActivityX, y, subActivityWidth, color);
+                    }
+                     y += subCardHeight;
+                });
+                y += 10;
+            });
+        });
+
+        // Page numbering
+        for (let i = 1; i <= pageNumber; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text(`Página ${i} de ${pageNumber}`, pageW / 2, pageH - 5, { align: 'center' });
+        }
+
+        doc.save("Roadmap-TranscriptRAG-JL.pdf");
+        toast({ title: "Éxito!", description: "Tu PDF ha sido descargado." });
     } catch (error) {
-      console.error(error);
-      toast({
-        variant: "destructive",
-        title: "Export Failed",
-        description: "An error occurred while generating the PDF.",
-      });
+        console.error(error);
+        toast({ variant: "destructive", title: "Exportación Fallida", description: "Ocurrió un error al generar el PDF." });
     } finally {
-      setIsExporting(false);
+        setIsExporting(false);
     }
   };
 
+  const methodologies = treeData.filter((item) => item.Tipo === "Metodología");
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Tabs defaultValue="flow" className="w-full">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <TabsList>
-            <TabsTrigger value="flow">Flujo</TabsTrigger>
-            <TabsTrigger value="table">Tabla</TabsTrigger>
-          </TabsList>
-          <Button onClick={handleExport} disabled={isExporting}>
-            <Download className="mr-2 h-4 w-4" />
-            {isExporting ? "Generando..." : "Descargar PDF"}
-          </Button>
-        </div>
+    <div className="flex flex-row-reverse">
+       <HolisticView methodologies={methodologies} activeId={activeId} />
+      <div className="w-full lg:w-3/4 py-8 pr-8">
+        <Tabs defaultValue="flow" className="w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <TabsList>
+              <TabsTrigger value="flow">Flujo</TabsTrigger>
+              <TabsTrigger value="table">Tabla</TabsTrigger>
+            </TabsList>
+            <Button onClick={handleExport} disabled={isExporting}>
+              <Download className="mr-2 h-4 w-4" />
+              {isExporting ? "Generando..." : "Descargar PDF"}
+            </Button>
+          </div>
 
-        <TabsContent value="flow" className=" -mx-4 sm:-mx-6 lg:-mx-8">
-            <RoadmapFlowView data={treeData} />
-        </TabsContent>
-        <TabsContent value="table">
-          <TableView data={flatData} />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="flow">
+              <div ref={scrollContainerRef}>
+                <RoadmapFlowView data={methodologies} />
+              </div>
+          </TabsContent>
+          <TabsContent value="table">
+            <TableView data={flatData} />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }

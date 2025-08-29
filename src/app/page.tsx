@@ -22,7 +22,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="p-4 sm:p-6 md:p-8">
+    <div className="container mx-auto">
       <RoadmapClient flatData={roadmapItems} treeData={tree} />
     </div>
   );

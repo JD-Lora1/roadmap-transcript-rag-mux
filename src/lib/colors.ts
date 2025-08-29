@@ -1,9 +1,10 @@
-// Inspired by Santorini colors
+// Inspired by Santorini colors with more contrast
 export const methodologyColors = [
-    '#0D47A1', // Deep Blue Sea
-    '#1976D2', // Aegean Blue
-    '#42A5F5', // Sky Blue
-    '#90CAF9', // Light Sky Blue
-    '#1E88E5', // Strong Blue
-    '#64B5F6', // Bright Sky
+    '#003f5c', // Deep Ocean Blue
+    '#374c80', // Twilight Blue
+    '#7a5195', // Dusk Purple
+    '#bc5090', // Sunset Magenta
+    '#ef5675', // Coral Pink
+    '#ff764a', // Tangerine Orange
+    '#ffa600', // Golden Sun
 ];
